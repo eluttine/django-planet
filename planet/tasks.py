@@ -14,14 +14,20 @@ try:
 except ImportError:
     from urllib.parse import urlparse
 
+import re
+from w3lib.url import url_query_cleaner
+
 import feedparser
 import time
 import mimetypes
 from bs4 import BeautifulSoup
 
+import urllib
+
 from django.conf import settings
 from django.contrib.sites.models import Site
 from django.contrib.auth import get_user_model
+from django.core.files import File
 
 from tagging.models import Tag
 
@@ -34,9 +40,27 @@ from planet.signals import post_created
 class PostAlreadyExists(Exception):
     pass
 
+def generate_thumbnail(url):
+    r_image = re.compile(r".*\.(jpg|JPG|png)$")
+    if r_image.match(url):
+        result = urllib.urlretrieve(url)
+        return (url, File(open(result[0])))
+    else:
+        return (None, None)
+
+def process_thumbnail_from_content(content):
+    if not content:
+        return (None, None)
+    soup = BeautifulSoup(content[0].get('value'), 'html.parser')
+    img_tags = soup.find_all("img")
+    if img_tags:
+        r_image = re.compile(r".*\.(jpg|JPG|png)$")
+        url = img_tags[0].get("src")
+        return generate_thumbnail(url)
+    return (None, None)
 
 @task(ignore_results=True)
-def process_feed(feed_url, owner_id=None, create=False, category_title=None):
+def process_feed(feed_url, owner_id=None, create=False, category_title=None, feed_image=None):
     """
     Stores a feed, its related data, its entries and their related data.
     If create=True then it creates the feed, otherwise it only stores new
@@ -154,12 +178,15 @@ def process_feed(feed_url, owner_id=None, create=False, category_title=None):
         else:
             category = None
 
+        thumbnail_url, thumbnail = generate_thumbnail(feed_image)
+
         planet_feed = Feed(title=title, subtitle=subtitle, blog=blog,
                            url=feed_url, rights=rights, info=info, guid=guid,
                            image_url=image_url, icon_url=icon_url, language=language,
                            etag=etag, last_modified=last_modified, generator=generator,
                            is_active=True, last_checked=datetime.now(),
-                           site=current_site, category=category
+                           site=current_site, category=category,
+                           thumbnail_url=thumbnail_url, thumbnail=thumbnail
                            )
         planet_feed.save()
 
@@ -196,6 +223,12 @@ def process_feed(feed_url, owner_id=None, create=False, category_title=None):
             for entry in document.entries:
                 title = entry.get("title", "")
                 url = entry.get("link")
+
+                thumbnail_url, thumbnail = process_thumbnail_from_content(entry.get('content'))
+                if not thumbnail:
+                    thumbnail_url = planet_feed.thumbnail_url
+                    thumbnail = planet_feed.thumbnail
+
                 try:
                     guid = unicode(md5(entry.get("link")).hexdigest())
                 except NameError:
@@ -216,7 +249,8 @@ def process_feed(feed_url, owner_id=None, create=False, category_title=None):
                         raise PostAlreadyExists
                     post = Post(title=title, url=url, guid=guid, content=content,
                                 comments_url=comments_url, date_modified=date_modified,
-                                feed=planet_feed)
+                                feed=planet_feed, thumbnail_url=thumbnail_url,
+                                thumbnail=thumbnail)
                     # To have the feed entry in the pre_save signal
                     post.entry = entry
                     post.save()

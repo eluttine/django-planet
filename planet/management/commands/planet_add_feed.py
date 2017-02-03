@@ -17,7 +17,14 @@ class Command(BaseCommand):
             default=None,
             metavar='Title',
             help='Add this feed to a Category'),
+        make_option('-i', '--feed-image',
+            action='store',
+            dest='feed_image',
+            default=None,
+            metavar='Feed image',
+            help='Feed default image'),
         )
+
 
     def handle(self, *args, **options):
         if not len(args):
@@ -26,5 +33,8 @@ class Command(BaseCommand):
 
         feed_url = args[0]
         # process feed in create-mode
-        process_feed.delay(feed_url, create=True, category_title=options['category'])
+        process_feed.delay(feed_url,
+                           create=True,
+                           category_title=options['category'],
+                           feed_image=options['feed_image'])
         self.stdout.write("Feed created. Posts scheduled to be retrived soon.")

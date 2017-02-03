@@ -25,6 +25,9 @@ from django.conf import settings
 from django.db.models.signals import pre_delete
 from django.template.defaultfilters import slugify
 
+from imagekit.models import ProcessedImageField
+from imagekit.processors import ResizeToFill
+
 # Patch for handle new and old version of django-tagging
 try:
     from tagging import register
@@ -169,6 +172,15 @@ class Feed(models.Model):
     category = models.ForeignKey(Category, blank=True, null=True,
                                  db_index=True)
 
+    thumbnail_url = models.URLField(blank=True, null=True)
+
+    thumbnail = ProcessedImageField(upload_to='thumbnails',
+                                    processors=[ResizeToFill(600, 400)],
+                                    format='JPEG',
+                                    options={'quality': 90},
+                                    blank=True,
+                                    null=True)
+
     site_objects = FeedManager()
     objects = models.Manager()
 
@@ -272,6 +284,13 @@ class Post(models.Model):
     date_modified = models.DateTimeField(_("Date modified"), null=True,
         blank=True, db_index=True)
     date_created = models.DateTimeField(_("Date created"), auto_now_add=True)
+
+    thumbnail_url = models.URLField(blank=True, null=True)
+    thumbnail = ProcessedImageField(upload_to='thumbnails',
+                                    processors=[ResizeToFill(600, 400)],
+                                    format='JPEG',
+                                    options={'quality': 90},
+                                    blank=True, null=True)
 
     site_objects = PostManager()
     objects = models.Manager()
@@ -397,4 +416,3 @@ class Enclosure(models.Model):
 
     def __str__(self):
         return "{} [{}] ({})".format(self.link, self.mime_type, self.post)
-
