@@ -175,7 +175,7 @@ class Feed(models.Model):
     thumbnail_url = models.URLField(blank=True, null=True)
 
     thumbnail = ProcessedImageField(upload_to='thumbnails',
-                                    processors=[ResizeToFill(600, 400)],
+                                    processors=[ResizeToFill(450, 675)],
                                     format='JPEG',
                                     options={'quality': 90},
                                     blank=True,
@@ -287,7 +287,7 @@ class Post(models.Model):
 
     thumbnail_url = models.URLField(blank=True, null=True)
     thumbnail = ProcessedImageField(upload_to='thumbnails',
-                                    processors=[ResizeToFill(600, 400)],
+                                    processors=[ResizeToFill(450, 675)],
                                     format='JPEG',
                                     options={'quality': 90},
                                     blank=True, null=True)
@@ -339,7 +339,7 @@ class Author(models.Model):
         ordering = ('name', 'email')
 
     def __str__(self):
-        return "{} ({})".format(self.name, self.email)
+        return "{}".format(self.name)
 
     @models.permalink
     def get_absolute_url(self):
