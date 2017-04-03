@@ -23,6 +23,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.contrib.sites.models import Site
 from django.conf import settings
 from django.db.models.signals import pre_delete
+from django.dispatch.dispatcher import receiver
 from django.template.defaultfilters import slugify
 
 from imagekit.models import ProcessedImageField
@@ -318,6 +319,18 @@ register(Post)
 def delete_asociated_tags(sender, **kwargs):
     Tag.objects.update_tags(kwargs['instance'], None)
 pre_delete.connect(delete_asociated_tags, sender=Post)
+
+# Deleting thumbnails
+@receiver(pre_delete, sender=Post)
+def post_delete(sender, instance, **kwargs):
+    # Pass false so FileField doesn't save the model.
+    instance.thumbnail.delete(False)
+
+@receiver(pre_delete, sender=Feed)
+def post_delete(sender, instance, **kwargs):
+    # Pass false so FileField doesn't save the model.
+    instance.thumbnail.delete(False)
+
 
 
 @python_2_unicode_compatible
