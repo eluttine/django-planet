@@ -176,9 +176,9 @@ class Feed(models.Model):
     thumbnail_url = models.URLField(blank=True, null=True)
 
     thumbnail = ProcessedImageField(upload_to='thumbnails',
-                                    processors=[ResizeToFill(450, 675)],
+                                    processors=[ResizeToFill(400, 300)],
                                     format='JPEG',
-                                    options={'quality': 90},
+                                    options={'quality': 100},
                                     blank=True,
                                     null=True)
 
@@ -288,9 +288,9 @@ class Post(models.Model):
 
     thumbnail_url = models.URLField(blank=True, null=True)
     thumbnail = ProcessedImageField(upload_to='thumbnails',
-                                    processors=[ResizeToFill(450, 675)],
+                                    processors=[ResizeToFill(400, 300)],
                                     format='JPEG',
-                                    options={'quality': 90},
+                                    options={'quality': 100},
                                     blank=True, null=True)
 
     site_objects = PostManager()
