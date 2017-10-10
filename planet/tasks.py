@@ -15,7 +15,7 @@ except ImportError:
     from urllib.parse import urlparse
 
 import re
-from w3lib.url import url_query_cleaner
+from w3lib.url import url_query_cleaner, safe_url_string
 
 import feedparser
 import time
@@ -41,6 +41,8 @@ class PostAlreadyExists(Exception):
     pass
 
 def generate_thumbnail(url):
+    url = safe_url_string(url.split('?')[0])
+    print("URL is " + url)
     r_image = re.compile(r".*\.(jpg|JPG|png)$")
     if r_image.match(url):
         result = urllib.urlretrieve(url)
@@ -54,7 +56,6 @@ def process_thumbnail_from_content(content):
     soup = BeautifulSoup(content[0].get('value'), 'html.parser')
     img_tags = soup.find_all("img")
     if img_tags:
-        r_image = re.compile(r".*\.(jpg|JPG|png)$")
         url = img_tags[0].get("src")
         return generate_thumbnail(url)
     return (None, None)
